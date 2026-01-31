@@ -101,6 +101,7 @@ select {
   margin: 4px 0 0;
   font-size: 20px;
   font-weight: 600;
+  color: var(--color-text);
 }
 
 .grid {
@@ -122,6 +123,7 @@ select {
 
 .card-header h2 {
   margin: 0 0 4px;
+  color: var(--color-text);
 }
 
 .card-header p {
@@ -160,6 +162,7 @@ select {
 
 .mono {
   font-family: "JetBrains Mono", "Segoe UI", monospace;
+  color: var(--color-text);
 }
 
 .form-grid {
@@ -206,6 +209,7 @@ select {
 
 .photo-header h3 {
   margin: 0 0 4px;
+  color: var(--color-text);
 }
 
 .photo-header p {
@@ -264,6 +268,7 @@ select {
   gap: 12px;
   text-align: left;
   background: var(--color-surface);
+  color: var(--color-text);
   cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
@@ -280,6 +285,7 @@ select {
 .job-title {
   margin: 0 0 4px;
   font-weight: 600;
+  color: var(--color-text);
 }
 
 .job-meta {
@@ -328,6 +334,7 @@ select {
 .step-button {
   border: 1px solid var(--color-border);
   background: var(--color-surface);
+  color: var(--color-text);
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 12px;
@@ -375,7 +382,11 @@ select {
 .icon-button.active {
   border-color: var(--color-primary);
   color: var(--color-primary);
-  background: #e0f2fe;
+  background: rgba(14, 165, 233, 0.15);
+}
+
+[data-theme="dark"] .icon-button.active {
+  background: rgba(56, 189, 248, 0.2);
 }
 
 .log-placeholder {
@@ -385,6 +396,10 @@ select {
   color: var(--color-muted);
   font-size: 14px;
   text-align: center;
+}
+
+.log-placeholder strong {
+  color: var(--color-text);
 }
 
 .modal-backdrop {
@@ -428,18 +443,27 @@ select {
   gap: 12px;
 }
 
+.modal-header h3,
+.modal .meta-value {
+  color: var(--color-text);
+}
+
+.modal .job-meta {
+  color: var(--color-muted);
+}
+
 .modal-body {
   display: grid;
   gap: 16px;
 }
 
 .modal-steps {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
   padding: 12px;
   display: grid;
   gap: 8px;
-  background: #ffffff;
+  background: var(--color-surface);
 }
 
 .process-alert {
@@ -474,13 +498,13 @@ select {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #64748b;
+  color: var(--color-muted);
 }
 
 .process-subtitle {
   margin: 4px 0 0;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--color-text);
 }
 
 .process-step {
@@ -489,7 +513,7 @@ select {
   justify-content: space-between;
   gap: 12px;
   font-size: 13px;
-  color: #0f172a;
+  color: var(--color-text);
 }
 
 .spinner {
@@ -604,6 +628,10 @@ select {
   margin-bottom: 0;
 }
 
+.empty-state strong {
+  color: var(--color-text);
+}
+
 .status-badge {
   padding: 4px 10px;
   border-radius: 999px;
@@ -625,7 +653,7 @@ select {
 
 .status-pending {
   background: #e0f2fe;
-  color: var(--color-primary-hover);
+  color: #0284c7;
 }
 
 .status-in-progress {
@@ -646,6 +674,42 @@ select {
 .status-error {
   background: #fee2e2;
   color: #b91c1c;
+}
+
+/* Dark mode: status badges need lighter text on darker backgrounds */
+[data-theme="dark"] .status-online {
+  background: rgba(52, 211, 153, 0.25);
+  color: #6ee7b7;
+}
+
+[data-theme="dark"] .status-offline {
+  background: rgba(148, 163, 184, 0.25);
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .status-pending {
+  background: rgba(56, 189, 248, 0.25);
+  color: #7dd3fc;
+}
+
+[data-theme="dark"] .status-in-progress {
+  background: rgba(251, 191, 36, 0.25);
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .status-done {
+  background: rgba(52, 211, 153, 0.25);
+  color: #6ee7b7;
+}
+
+[data-theme="dark"] .status-paused {
+  background: rgba(251, 191, 36, 0.25);
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .status-error {
+  background: rgba(248, 113, 113, 0.25);
+  color: #fca5a5;
 }
 
 .primary,
