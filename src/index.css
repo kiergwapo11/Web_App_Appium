@@ -2,11 +2,28 @@
   box-sizing: border-box;
 }
 
+:root {
+  --color-bg: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-text: #0f172a;
+  --color-muted: #64748b;
+  --color-primary: #0ea5e9;
+  --color-primary-hover: #0284c7;
+  --color-success: #059669;
+  --color-border: #e2e8f0;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
+  --radius: 12px;
+  --radius-lg: 16px;
+}
+
 body {
   margin: 0;
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-  color: #0f172a;
-  background: #f8fafc;
+  font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.5;
 }
 
 img {
@@ -74,10 +91,15 @@ select {
 }
 
 .card {
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
   padding: 24px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-md);
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
 }
 
 .card-header h2 {
@@ -195,9 +217,13 @@ select {
 
 .job-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
   gap: 24px;
   margin-top: 24px;
+}
+
+.job-layout.single-column {
+  grid-template-columns: 1fr;
 }
 
 .job-sidebar {
@@ -211,20 +237,25 @@ select {
 }
 
 .job-row {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
   display: flex;
   justify-content: space-between;
   gap: 12px;
   text-align: left;
-  background: #ffffff;
+  background: var(--color-surface);
   cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.job-row:hover {
+  background: #f8fafc;
 }
 
 .job-row.active {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.25);
 }
 
 .job-title {
@@ -238,22 +269,6 @@ select {
   font-size: 12px;
 }
 
-.job-detail {
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 16px;
-  min-height: 320px;
-  background: #ffffff;
-}
-
-.job-detail-placeholder {
-  color: #64748b;
-  font-size: 14px;
-  text-align: center;
-  padding: 60px 20px;
-  border: 1px dashed #e2e8f0;
-  border-radius: 12px;
-}
 
 
 .job-meta-grid {
@@ -329,10 +344,18 @@ select {
   cursor: pointer;
 }
 
+.icon-button {
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.icon-button:hover {
+  background: #f1f5f9;
+}
+
 .icon-button.active {
-  border-color: #2563eb;
-  color: #2563eb;
-  background: #eff6ff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: #e0f2fe;
 }
 
 .log-placeholder {
@@ -356,14 +379,26 @@ select {
 }
 
 .modal {
-  background: #ffffff;
-  border-radius: 16px;
-  max-width: 760px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  max-width: 560px;
   width: 100%;
-  padding: 20px;
+  padding: 24px;
   display: grid;
-  gap: 16px;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+  gap: 20px;
+  box-shadow: var(--shadow-lg);
+  animation: modalIn 0.25s ease;
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .modal-header {
@@ -378,6 +413,80 @@ select {
   gap: 16px;
 }
 
+.modal-steps {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  background: #ffffff;
+}
+
+.process-alert {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  display: grid;
+  gap: 10px;
+  min-width: 260px;
+  box-shadow: var(--shadow-lg);
+  z-index: 30;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.process-title {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.process-subtitle {
+  margin: 4px 0 0;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.process-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .modal-controls {
   display: flex;
   flex-wrap: wrap;
@@ -423,14 +532,26 @@ select {
 }
 
 .log-box {
-  background: #0f172a;
-  color: #e2e8f0;
-  border-radius: 12px;
-  padding: 12px;
-  max-height: 200px;
-  overflow: auto;
+  background: #f0fdf4;
+  color: var(--color-text);
+  border-radius: var(--radius);
+  padding: 16px;
+  max-height: 220px;
+  overflow-y: auto;
   font-family: "JetBrains Mono", "Segoe UI", monospace;
-  font-size: 12px;
+  font-size: 13px;
+  border: 1px solid #bbf7d0;
+  line-height: 1.6;
+}
+
+.log-box p {
+  margin: 0 0 8px;
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+.log-box p:last-child {
+  margin-bottom: 0;
 }
 
 .log-box.compact {
@@ -438,8 +559,20 @@ select {
 }
 
 .empty-state {
-  color: #94a3b8;
+  color: var(--color-muted);
   font-size: 14px;
+  padding: 24px;
+  text-align: center;
+  background: #f8fafc;
+  border-radius: var(--radius);
+}
+
+.empty-state p {
+  margin: 0 0 4px;
+}
+
+.empty-state p:last-child {
+  margin-bottom: 0;
 }
 
 .status-badge {
@@ -463,7 +596,7 @@ select {
 
 .status-pending {
   background: #e0f2fe;
-  color: #0284c7;
+  color: var(--color-primary-hover);
 }
 
 .status-in-progress {
@@ -474,6 +607,11 @@ select {
 .status-done {
   background: #dcfce7;
   color: #15803d;
+}
+
+.status-paused {
+  background: #fef3c7;
+  color: #b45309;
 }
 
 .status-error {
@@ -490,8 +628,24 @@ select {
 }
 
 .primary {
-  background: #2563eb;
+  background: var(--color-primary);
   color: #ffffff;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.primary:active {
+  transform: scale(0.98);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .ghost {

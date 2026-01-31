@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const MODELS = [
   {
@@ -57,22 +57,36 @@ const MODELS = [
   },
 ];
 
+const STATE_ABBREV = {
+  texas: "TX", california: "CA", ohio: "OH", florida: "FL", newyork: "NY",
+  arizona: "AZ", georgia: "GA", illinois: "IL", michigan: "MI", nevada: "NV",
+  colorado: "CO", washington: "WA", oregon: "OR", virginia: "VA", northcarolina: "NC",
+  usa: "USA",
+};
+
+function formatLocation(city, state) {
+  if (!state) return city;
+  const key = state.toLowerCase().replace(/\s/g, "");
+  const abbr = STATE_ABBREV[key];
+  return abbr ? `${city}, ${abbr}` : `${city}, ${state}`;
+}
+
 const JOB_STEP_DEFS = [
   {
     label: "generating proxy",
-    log: (location) => `Generating proxy for ${location}`,
+    log: (city, state) => `Generating proxy for ${formatLocation(city, state)}`,
   },
   { label: "proxy assigned", log: () => "Proxy assigned" },
-  { label: "generating email", log: () => "Generating email" },
-  { label: "requesting phone number", log: () => "Phone number received" },
-  { label: "starting script", log: () => "Script started" },
+  { label: "phone number received", log: () => "Phone number received" },
+  { label: "script started", log: () => "Script started" },
   { label: "opening app", log: () => "Opening app" },
-  { label: "creating account", log: () => "Account creation started" },
+  { label: "account creation started", log: () => "Account creation started" },
 ];
 
 const PROXY_STEP_LABEL = "generating proxy";
 
-const JOB_TICK_MS = 1400;
+const JOB_TICK_MS = 900;
+const JOB_TICK_JITTER_MS = 400;
 const DISPLAY_PHOTO_COUNT = 4;
 
 const DEFAULT_DEVICES = [
@@ -107,6 +121,20 @@ function formatStepLabel(label) {
     .map((word) => word[0]?.toUpperCase() + word.slice(1))
     .join(" ");
 }
+
+function buildStepStatusList(progressIndex) {
+  return JOB_STEP_DEFS.map((step, index) => {
+    if (progressIndex >= 0 && index < progressIndex) {
+      return { label: step.label, status: "done" };
+    }
+    if (progressIndex === index) {
+      return { label: step.label, status: "in-progress" };
+    }
+    return { label: step.label, status: "pending" };
+  });
+}
+
+
 
 function randomDateInRange(minDate, maxDate) {
   const min = new Date(minDate).getTime();
@@ -147,7 +175,6 @@ export default function App() {
   const [activeStepLabel, setActiveStepLabel] = useState(null);
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
-  const timeoutsRef = useRef({});
 
   const selectedModel = useMemo(
     () => MODELS.find((model) => model.id === selectedModelId),
@@ -174,11 +201,53 @@ export default function App() {
   }, [devices]);
 
   useEffect(() => {
-    return () => {
-      Object.values(timeoutsRef.current).forEach((timeoutId) =>
-        clearTimeout(timeoutId)
-      );
-    };
+    const interval = setInterval(() => {
+      setJobs((prev) => {
+        let changed = false;
+        const next = prev.map((job) => {
+          if (job.playback !== "play" || job.status !== "in-progress") return job;
+          const idx = (job.progressIndex ?? -1) + 1;
+          if (idx >= JOB_STEP_DEFS.length) {
+            changed = true;
+            return {
+              ...job,
+              status: "done",
+              playback: "stop",
+              progressIndex: idx,
+              steps: job.steps.map((s) => ({ ...s, status: "done" })),
+              logs: [
+                ...job.logs,
+                {
+                  message: "Job complete",
+                  stepLabel: "system",
+                  timestamp: new Date(),
+                },
+              ],
+            };
+          }
+          const { city, state } = job.snapshot;
+          const logEntry = {
+            message: idx === 0
+              ? JOB_STEP_DEFS[idx].log(city, state)
+              : JOB_STEP_DEFS[idx].log(),
+            stepLabel: JOB_STEP_DEFS[idx].label,
+            timestamp: new Date(),
+          };
+          changed = true;
+          return {
+            ...job,
+            progressIndex: idx,
+            steps: job.steps.map((step, i) => ({
+              ...step,
+              status: i < idx ? "done" : i === idx ? "in-progress" : "pending",
+            })),
+            logs: [...job.logs, logEntry],
+          };
+        });
+        return changed ? next : prev;
+      });
+    }, JOB_TICK_MS + Math.floor(Math.random() * JOB_TICK_JITTER_MS));
+    return () => clearInterval(interval);
   }, []);
 
   const handleDeviceChange = (index, field, value) => {
@@ -218,64 +287,6 @@ export default function App() {
     );
   };
 
-  const startJobSimulation = (jobId, location, startIndex = 0) => {
-    const runStep = (index) => {
-      let shouldContinue = false;
-      setJobs((prev) =>
-        prev.map((job) => {
-          if (job.id !== jobId) return job;
-          if (job.playback !== "play") return job;
-          if (index >= JOB_STEP_DEFS.length) {
-            return {
-              ...job,
-              status: "done",
-              playback: "stop",
-              progressIndex: index,
-              steps: job.steps.map((step) => ({ ...step, status: "done" })),
-              logs: [
-                ...job.logs,
-                {
-                  message: "Job complete",
-                  stepLabel: "system",
-                  timestamp: new Date(),
-                },
-              ],
-            };
-          }
-          const updatedSteps = job.steps.map((step, stepIndex) => {
-            if (stepIndex < index) {
-              return { ...step, status: "done" };
-            }
-            if (stepIndex === index) {
-              return { ...step, status: "in-progress" };
-            }
-            return { ...step, status: "pending" };
-          });
-          const logLine = JOB_STEP_DEFS[index].log(location);
-          const logEntry = {
-            message: logLine,
-            stepLabel: JOB_STEP_DEFS[index].label,
-            timestamp: new Date(),
-          };
-          shouldContinue = true;
-          return {
-            ...job,
-            status: "in-progress",
-            playback: "play",
-            progressIndex: index,
-            steps: updatedSteps,
-            logs: [...job.logs, logEntry],
-          };
-        })
-      );
-      if (shouldContinue && index < JOB_STEP_DEFS.length) {
-        const timeoutId = setTimeout(() => runStep(index + 1), JOB_TICK_MS);
-        timeoutsRef.current[jobId] = timeoutId;
-      }
-    };
-    runStep(startIndex);
-  };
-
   const handleStartJob = () => {
     if (!selectedModel) return;
     const location = `${profile.city}, ${profile.state}`;
@@ -303,7 +314,9 @@ export default function App() {
 
     setJobs((prev) => [newJob, ...prev]);
     setSelectedJobId(jobId);
-    startJobSimulation(jobId, location);
+    setIsJobModalOpen(true);
+    setIsLogsOpen(true);
+    setActiveStepLabel(PROXY_STEP_LABEL);
   };
 
   const selectedJob = jobs.find((job) => job.id === selectedJobId);
@@ -313,6 +326,18 @@ export default function App() {
   const selectedStep =
     selectedJob?.steps.find((step) => step.label === activeStepLabel) ??
     currentStep;
+  const stepStatusList = selectedJob
+    ? buildStepStatusList(selectedJob.progressIndex ?? -1)
+    : [];
+  const activeStep =
+    stepStatusList.find((step) => step.status === "in-progress") ??
+    stepStatusList[0];
+  const processingJob = jobs.find((job) => job.status === "in-progress");
+  const processingStep = processingJob
+    ? buildStepStatusList(processingJob.progressIndex ?? -1).find(
+        (step) => step.status === "in-progress"
+      )
+    : null;
 
   const handleStepLogsOpen = (label) => {
     if (!label) return;
@@ -322,84 +347,91 @@ export default function App() {
 
   const closeJobModal = () => {
     setIsJobModalOpen(false);
+    setIsLogsOpen(false);
   };
 
   const handleSelectJob = (jobId) => {
     setSelectedJobId(jobId);
-    setIsLogsOpen(false);
+    setIsLogsOpen(true);
     setActiveStepLabel(null);
     setIsJobModalOpen(true);
   };
 
   const handlePlayback = (jobId, action) => {
+    const currentJob = jobs.find((job) => job.id === jobId);
+    if (!currentJob) return;
+
     if (action === "stop") {
-      clearTimeout(timeoutsRef.current[jobId]);
-    }
-
-    let jobToResume = null;
-    setJobs((prev) =>
-      prev.map((job) => {
-        if (job.id !== jobId) return job;
-        if (action === "stop") {
-          return {
-            ...job,
-            playback: "stop",
-            status: "pending",
-            progressIndex: -1,
-            steps: buildJobSteps(),
-            logs: [
-              ...job.logs,
-              {
-                message: "Job stopped",
-                stepLabel: "system",
-                timestamp: new Date(),
-              },
-            ],
-          };
-        }
-
-        if (action === "play") {
-          jobToResume = job;
-          const shouldRestart =
-            job.playback === "stop" || (job.progressIndex ?? -1) === -1;
-          return shouldRestart
+      setJobs((prev) =>
+        prev.map((job) =>
+          job.id === jobId
             ? {
                 ...job,
-                playback: action,
-                logs: [
-                  ...job.logs,
-                  {
-                    message: "Job restarted",
-                    stepLabel: "system",
-                    timestamp: new Date(),
-                  },
-                ],
+                playback: "stop",
+                status: "pending",
+                progressIndex: -1,
+                steps: buildJobSteps(),
+                logs: [],
               }
-            : { ...job, playback: action };
-        }
-
-        return { ...job, playback: action };
-      })
-    );
-
-    if (action === "play" && jobToResume) {
-      const nextIndex =
-        jobToResume.progressIndex === -1 ||
-        jobToResume.playback === "stop"
-          ? 0
-          : (jobToResume.progressIndex ?? -1) + 1;
-      const location = `${jobToResume.snapshot.city}, ${jobToResume.snapshot.state}`;
-      startJobSimulation(jobToResume.id, location, nextIndex);
+            : job
+        )
+      );
+      return;
     }
+
+    if (action === "pause") {
+      setJobs((prev) =>
+        prev.map((job) =>
+          job.id === jobId
+            ? { ...job, playback: "pause", status: "paused" }
+            : job
+        )
+      );
+      return;
+    }
+
+    if (action === "play") {
+      setJobs((prev) =>
+        prev.map((job) =>
+          job.id === jobId
+            ? { ...job, playback: "play", status: "in-progress" }
+            : job
+        )
+      );
+    }
+  };
+
+  const handleGenerateProxy = (jobId) => {
+    setActiveStepLabel(PROXY_STEP_LABEL);
+    setIsLogsOpen(true);
   };
 
   return (
     <div className="app">
+      {processingJob && (
+        <div className="process-alert" role="status" aria-live="polite">
+          <div>
+            <p className="process-title">Processing</p>
+            <p className="process-subtitle">
+              {processingJob.model} · {processingJob.snapshot.city},{" "}
+              {processingJob.snapshot.state}
+            </p>
+          </div>
+          <div className="process-step">
+            <span className="step-label">
+              {formatStepLabel(processingStep?.label || "Working")}
+            </span>
+            <span className="spinner" aria-label="Loading"></span>
+          </div>
+        </div>
+      )}
       <header className="app-header">
         <div>
           <p className="app-overline">Web Platform</p>
           <h1>Appium Job Control</h1>
-
+          <p className="app-subtitle">
+            Manage devices, create accounts, and monitor job progress.
+          </p>
         </div>
         <div className="header-stats">
           <div>
@@ -663,12 +695,13 @@ export default function App() {
             <p>Track job progress and live logs.</p>
           </div>
 
-          <div className="job-layout">
+          <div className="job-layout single-column">
             <div className="job-sidebar">
               <div className="job-list">
               {jobs.length === 0 && (
                 <div className="empty-state">
-                  No jobs yet. Start one to see progress.
+                  <p>No jobs yet.</p>
+                  <p>Configure a profile and click <strong>Start job</strong> to begin.</p>
                 </div>
               )}
               {jobs.map((job) => (
@@ -690,18 +723,6 @@ export default function App() {
               ))}
               </div>
 
-            </div>
-
-            <div className="job-detail">
-              {!selectedJob ? (
-                <div className="empty-state">
-                  Select a job to see details.
-                </div>
-              ) : (
-                <div className="job-detail-placeholder">
-                  Open a job to view live logs and controls.
-                </div>
-              )}
             </div>
           </div>
         </section>
@@ -757,33 +778,27 @@ export default function App() {
               <div className="modal-controls">
                 <button
                   className="step-button"
-                  onClick={() => handleStepLogsOpen(PROXY_STEP_LABEL)}
+                  onClick={() => handleGenerateProxy(selectedJob.id)}
                 >
-                  Generate Proxy
+                  Generated Proxy
                 </button>
                 <div className="control-buttons">
                   <button
-                    className={`icon-button ${
-                      selectedJob.playback === "play" ? "active" : ""
-                    }`}
+                    className={`icon-button ${selectedJob.playback === "play" ? "active" : ""}`}
                     onClick={() => handlePlayback(selectedJob.id, "play")}
                     type="button"
                   >
                     Play
                   </button>
                   <button
-                    className={`icon-button ${
-                      selectedJob.playback === "pause" ? "active" : ""
-                    }`}
+                    className={`icon-button ${selectedJob.playback === "pause" ? "active" : ""}`}
                     onClick={() => handlePlayback(selectedJob.id, "pause")}
                     type="button"
                   >
                     Pause
                   </button>
                   <button
-                    className={`icon-button ${
-                      selectedJob.playback === "stop" ? "active" : ""
-                    }`}
+                    className="icon-button"
                     onClick={() => handlePlayback(selectedJob.id, "stop")}
                     type="button"
                   >
@@ -794,21 +809,22 @@ export default function App() {
 
               {isLogsOpen ? (
                 <div className="log-box">
-                  {selectedJob.logs.length === 0 ? (
+                  {selectedJob.logs.filter((log) => log.stepLabel !== "system")
+                    .length === 0 ? (
                     <p>No logs yet.</p>
                   ) : (
-                    selectedJob.logs.map((log, index) => (
-                      <p key={`${selectedJob.id}-modal-log-${index}`}>
-                        [{formatTimestamp(new Date(log.timestamp))}]{" "}
-                        {formatStepLabel(log.stepLabel || "system")} —{" "}
-                        {log.message}
-                      </p>
-                    ))
+                    selectedJob.logs
+                      .filter((log) => log.stepLabel !== "system")
+                      .map((log, index) => (
+                        <p key={`${selectedJob.id}-modal-log-${index}`}>
+                          {log.message}
+                        </p>
+                      ))
                   )}
                 </div>
               ) : (
                 <div className="log-placeholder">
-                  Click the step button to view logs.
+                  Click <strong>Generated Proxy</strong> to view live logs.
                 </div>
               )}
             </div>
