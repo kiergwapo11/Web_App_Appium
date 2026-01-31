@@ -175,6 +175,11 @@ export default function App() {
   const [activeStepLabel, setActiveStepLabel] = useState(null);
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", isDarkMode ? "dark" : "light");
+  }, [isDarkMode]);
 
   const selectedModel = useMemo(
     () => MODELS.find((model) => model.id === selectedModelId),
@@ -836,6 +841,14 @@ export default function App() {
           </div>
         </div>
       )}
+      <button
+        className="theme-toggle"
+        onClick={() => setIsDarkMode((prev) => !prev)}
+        type="button"
+        aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+      >
+        {isDarkMode ? "☀️ Light" : "🌙 Dark"}
+      </button>
     </div>
   );
 }
